@@ -3,9 +3,10 @@
 figs=0;
 
 %Initialize path to DLC output
-path_to_files='d:\Users\BClarkLab\GoogleDrive_\Manuscripts\In Progress\TgF344-AD_OF\Data\Tracked';
+path_to_files ='d:\Users\BClarkLab\GoogleDrive_\Manuscripts\In Progress\TgF344-AD_OF\Data\Tracked';
 files = struct2table(dir([path_to_files,'\**\*.csv']));
 subjectID = extractBefore([files.name{:}],'DLC');
+
 %Initialize data table and variables
 params=table;
 params.subID{1}=[];
@@ -14,21 +15,19 @@ params.neck{1}=[];
 params.back{1}=[];
 params.tail{1}=[];
 %Get SubID from subdirectory names
-vidfile=dir(path_to_files);
-
 
 dia = 202 ; %diameter of maze in cm
 
 %% Compile environment Max/Min for transformation into cm and cue Coords for
 %computing cue related measures in OF_postprocess
 
-% load('D:\Users\BClarkLab\Google Drive (lberkowitz@unm.edu)\Manuscripts\In Progress\PAE_OF\Data\maxmin.mat');
+load('d:\Users\BClarkLab\GoogleDrive_\Manuscripts\In Progress\TgF344-AD_OF\Data\maxmin.mat');
 
 for i = 1:length(files)
     params.subID{i} = extractBefore(files.name{i},'DLC');
     params.dia{i} = dia;
     % load header
-    fileID = fopen(fullfile(files(i).folder,files(i).name),'r');
+    fileID = fopen(fullfile(files.folder{i},files.name{i}),'r');
     dataArray = textscan(fileID, '%q%q%q%q%q%q%q%q%q%q%q%q%q%[^\n\r]',...
         3-2+1, 'Delimiter',',', 'TextType', 'string', 'HeaderLines',...
         2-1, 'ReturnOnError', false, 'EndOfLine', '\r\n');
@@ -37,7 +36,7 @@ for i = 1:length(files)
     clearvars fileID dataArray ans;
     
     % load data
-    fileID = fopen(fullfile(files(i).folder,files(i).name),'r');
+    fileID = fopen(fullfile(files.folder{i},files.name{i}),'r');
     dataArray = textscan(fileID, '%f%f%f%f%f%f%f%f%f%f%f%f%f%[^\n\r]',...
         'Delimiter', ',','TextType', 'string', 'EmptyValue', NaN,...
         'HeaderLines' ,4-1,'ReturnOnError', false, 'EndOfLine', '\r\n');
@@ -46,8 +45,8 @@ for i = 1:length(files)
     clearvars fileID dataArray ans;
     
     % load coded behaviors(obtained from Behavior_code.m)
-    if exist(['G:\Maria\OF\Videos\lgOF_dlc\',vidfile(i).name,filesep,vidfile(i).name,'.mat'])
-        behav = load(['G:\Maria\OF\Videos\lgOF_dlc\',vidfile(i).name,filesep,vidfile(i).name,'.mat']);
+    if exist([files.folder{i},filesep,params.subID{i},'.mat'])
+        behav = load([files.folder{i},filesep,params.subID{i},'.mat']);
     else
         behav = nan;
     end
@@ -70,7 +69,7 @@ for i = 1:length(files)
         
         tsxy(~inpolygon(tsxy(:,xloc(l)),tsxy(:,yloc(l)),xunit,yunit),xloc(l):yloc(l))=NaN;
         
-        [tsxy(:,xloc(l)),tsxy(:,yloc(l))]=FixPos(tsxy(:,xloc(l)),tsxy(:,yloc(l)),tsxy(:,1));
+        [tsxy(:,xloc(l)),tsxy(:,yloc(l))] = FixPos(tsxy(:,xloc(l)),tsxy(:,yloc(l)),tsxy(:,1));
     end
     
     %Keep only points that are within the trial start time plus 30min
