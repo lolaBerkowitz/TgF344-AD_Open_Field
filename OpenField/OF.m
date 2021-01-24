@@ -25,7 +25,7 @@ classdef OF
             distance_vector = sqrt((diff(x)).^2 + (diff(y)).^2);
             
             % Summary Path Measures
-            length = sum(distance_vector(velocity>=3,1));%Total Path length for points greater than 3cm/s
+            length = sum(distance_vector(velocity >= 3,1));%Total Path length for points greater than 3cm/s
             
         end
         
@@ -201,12 +201,12 @@ classdef OF
             occ = imgaussfilt(map, 1.5);
         end
         
-        function [out] = thigmotaxis(x,y,fr,diameter,center_proportion)
+        function [out] = thigmotaxis(x,y,fr,diameter)
             % Computes time spent near outside wall
             
             %Create annuli for center and outter edge of maze
-            outsideDwell = createZones([0,0],diameter,'type','annulus','fig',0,'annulusSize',center_proportion); %default annulus size is 80% for createZones
-            centerDwell = createZones([0,0],diameter,'type','annulus','fig',0,'annulusSize',center_proportion); %default annulus size is 80% for createZones
+            outsideDwell = createZones([0,0],diameter,'type','annulus','fig',0); %default annulus size is 80% for createZones
+            centerDwell = createZones([0,0],diameter,'type','annulus','fig',0); %default annulus size is 80% for createZones
             
             %Calculate dwell time for outter edge
             [in,~] = inpolygon(x,y,outsideDwell(:,1),outsideDwell(:,2));
@@ -246,7 +246,7 @@ classdef OF
             
         end
         
-        function metrics = home_base_metics(out_home,x,y,velocity,x_home,y_home,stopIdx,tsStop)
+        function metrics = home_base_metics(out_home,x,y,velocity,x_home,y_home,stopIdx,tsStop,fr)
             
             % This finds stops that occur in the home base boundary
             [startStop,~,~] = findgroups(stopIdx);
@@ -259,20 +259,18 @@ classdef OF
             % average velocity in home base
             metrics.hbVel = nanmean(velocity(out_home(1:end-1,1),1)); %remove last tempIn idx to accomodate velocity length
             
-            
             % time moving slow in home base in seconds
             metrics.slowInHB = nansum(out_home(1:end-1) & stopIdx)/fr; % time being slow in homebase
             
             % proportion of time being slow in home base
-            metrics.HBclass= slowInHB/hbOcc; % proportion of time being slow in hb
+            metrics.HBclass= metrics.slowInHB/metrics.hbOcc; % proportion of time being slow in hb
             
             % number times an animal stoped in the home base
-            metrics.HBstops = nansum(inpolygon(x(startStop,1),...
-                y(startStop,2),x_home(1:end-2)',y_home(1:end-2)')); % Find number of times animals initiated a start in the home base
+            metrics.HBstops = nansum(inpolygon(x(startStop),...
+                y(startStop),x_home(1:end-2)',y_home(1:end-2)')); % Find number of times animals initiated a start in the home base
             
             % index for the time it takes to reach the home base
-            time2HB_idx = inpolygon(x(startStop,1),...
-                x(startStop,2),x_home(1:end-2)',y_home(1:end-2)');
+            time2HB_idx = inpolygon(x(startStop),y(startStop),x_home(1:end-2)',y_home(1:end-2)');
             
             % time to first time in home base
             firstIdx = find(time2HB_idx);
@@ -280,11 +278,9 @@ classdef OF
             % save time to home base
             time2HB_time = tsStop{1,firstIdx(1)};
             metrics.time2HB = time2HB_time(1,1);
-            
-            
         end
         
-        function [HBBound,HBcoords,HBcenter,out_home,x_home,y_home] = rescale_home_base(home_base_x,home_base_y,upHBmap,upFactor,diameter,fr)
+        function [HBBound,HBcoords,HBcenter,out_home,x_home,y_home] = rescale_home_base(x,y,home_base_x,home_base_y,upHBmap,upFactor,diameter,fr)
             
             %rescale coordinates back to pool size
             x_home = rescale([home_base_x,upFactor+1,size(upHBmap,2)-upFactor],-(diameter/2),(diameter/2));
@@ -300,7 +296,7 @@ classdef OF
             HBBound = [x_home(1:end-2)',y_home(1:end-2)'];
             
             % time in home base
-            HBcoords = [x(out_home,1),y(out_home,2)];
+            HBcoords = [x(out_home),y(out_home)];
             
             [ ~,~, tempC] = min_encl_ellipsoid(HBBound(:,1),HBBound(:,2));
             HBcenter= [tempC(1,1),tempC(2,1)];
@@ -334,7 +330,7 @@ classdef OF
             % Calculate distance measures between high occupancy coordinates centers
             temp = [];
             if size(HBcenter,2) > 1
-                for hb = 1:size(pHBcenter,2)
+                for hb = 1:size(HBcenter,2)
                     temp = [temp; HBcenter{1,hb}];
                 end
                 HB_avg_dist = nanmean(pdist(temp));
