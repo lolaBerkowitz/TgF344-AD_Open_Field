@@ -9,11 +9,13 @@
 save_path = '/Users/lauraberkowitz/Google Drive/Manuscripts/In Progress/TgF344-AD_OF/Data/'; % maxmin.mat, cueCoords.mat
 
 % load data file
-load('/Users/lauraberkowitz/Google Drive/Manuscripts/In Progress/TgF344-AD_OF/Data/params.mat'); % maxmin.mat, cueCoords.mat
+% load('/Users/lauraberkowitz/Google Drive/Manuscripts/In Progress/TgF344-AD_OF/Data/params.mat'); % maxmin.mat, cueCoords.mat
 
 % Set some measurement parameters
 fr = 30; % 30 hz sample rate
 
+params.timeStopped{1} = [];
+params.stop_cue_proximity{1} = [];
 
 % Loop through subjects
 for i = 1:length(params.subID)
@@ -40,6 +42,7 @@ for i = 1:length(params.subID)
     %%
     % Find events when rat is stopped (i.e. flip velocity to find 'peaks')
     [events,duration,~] = detect_velocity_epochs(-1*velocity,vel_ts,fr);
+    
     %%
     % Grab xy for each stop
     for ii = 1:length(events)
@@ -56,7 +59,11 @@ for i = 1:length(params.subID)
             
         end
     end
-    clear stop
+    
+    % Save some stop measures for easy plotting later
+    params.timeStopped{i} = duration; 
+    params.stop_cue_proximity{i} = stop_cue_proximity;
+   
     
     
     % Calulate some gross run metrics
@@ -65,7 +72,7 @@ for i = 1:length(params.subID)
     median_duration(i)  = nanmedian(duration);
     median_inter_stop_interval(i)  = median(diff(events(:,3)));
     
-    
+     clear stop stop_cue_proximity
     % Subject, group, and condition identifiers
     subID{i,1} = params.subID{i};
     temp_group = contains(subID{i,1},'Tg');
@@ -198,9 +205,11 @@ end
 events = [vel_ts(thirdPass(:,1))' ,vel_ts(thirdPass(:,2))',vel_ts(peakPosition)'];
 duration = events(:,2)-events(:,1);
 
-% Discard ripples that are too short
+% Discard events that are too short
 events(duration < min_event_duration,:) = NaN;
 events = events((all((~isnan(events)),2)),:);
+duration(duration < min_event_duration,:) = NaN;
+duration = duration((all((~isnan(duration)),2)),:);
 
 disp(['After duration test: ' num2str(size(events,1)) ' events.']);
  %%
