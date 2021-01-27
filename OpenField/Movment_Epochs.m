@@ -17,7 +17,9 @@ diameter = params.dia{1};
 binsize = 3; %to use for HB detection
 upFactor = 15; %used in segmentimage - this upscales the heatmap to get a smooth boundary f
 
-
+% Save variables 
+params.runs{1} = [];
+params.run_circ{1} = [];
 % Loop through subjects
 for i = 1:length(params.subID)
     
@@ -55,6 +57,8 @@ for i = 1:length(params.subID)
     %Compute circuity and cue proximity, between run segments
     for iii = 1:size(run,2)
         run_circuity(iii) = circuity(run{iii}(:,1),run{iii}(:,2));
+        run_length(iii) = nansum(sqrt((diff(run{iii}(:,1))).^2 + (diff(run{iii}(:,2))).^2));
+
         if isnan(cue_cords)
             run_cue_proximity(iii)  = proximity_to_cue(run{iii}(:,1),run{iii}(:,2),params.cueCM{i - 1});
         else
@@ -63,6 +67,13 @@ for i = 1:length(params.subID)
         end
     end
     
+    % save run coords, circuity, and run length back to params for easy
+    % plotting. 
+    params.runs{i} = run;
+    params.run_circ{i} = run_circuity;
+    params.run_length{i} = run_length;
+    clear run
+    
     % Calulate some gross run metrics
     circ(i) = nanmedian(run_circuity); %compute median circuity
     num_runs(i)  = size(duration,1);
@@ -70,6 +81,7 @@ for i = 1:length(params.subID)
     median_peak_vel(i)  = nanmedian(peak_vel);
     median_duration(i)  = nanmedian(duration);
     median_inter_run_interval(i)  = median(diff(events(:,3)));
+    median_run_length(i) = median(run_length);
     
     
     % Subject, group, and condition identifiers
@@ -87,13 +99,14 @@ end
 % Save to google drive
 vars = {'subID','group','day','circuity',...
     'num_runs',...
+    'run_length',...
     'proximity_cue',...
     'median_peak_vel',...
     'median_duration',...
     'median_inter_run_interval',...
     };
 
-df = table(subID,group,day,circ',num_runs',proximity_cue',...
+df = table(subID,group,day,circ',num_runs',median_run_length',proximity_cue',...
     median_peak_vel',median_duration',median_inter_run_interval','VariableNames',vars);
 
 
@@ -206,9 +219,11 @@ end
 events = [vel_ts(thirdPass(:,1))' ,vel_ts(thirdPass(:,2))',vel_ts(peakPosition)'];
 duration = events(:,2)-events(:,1);
 
-% Discard ripples that are too short
-events(duration<min_event_duration,:) = NaN;
+% Discard events that are too short
+events(duration < min_event_duration,:) = NaN;
 events = events((all((~isnan(events)),2)),:);
+duration(duration < min_event_duration,:) = NaN;
+duration = duration((all((~isnan(duration)),2)),:);
 
 disp(['After duration test: ' num2str(size(events,1)) ' events.']);
 %%
@@ -222,6 +237,24 @@ disp(['After duration test: ' num2str(size(events,1)) ' events.']);
 %
 %     figure
 %     histogram(diff(events(:,3)),200)
+
+end
+
+function length = path_length(x,y,velocity)
+% Computes total path length during running
+% inputs:
+%   x: position vector of x-coordinates of length n
+%   y: position vecotr of y-coordinates of length n
+%   velocity: vector of instantaneous velocity (length of n - 1)
+% output:
+%   length: total path length in cm for active motion
+
+
+%distance formula
+distance_vector = sqrt((diff(x)).^2 + (diff(y)).^2);
+
+% Summary Path Measures
+length = sum(distance_vector(velocity >= 3,1));%Total Path length for points greater than 3cm/s
 
 end
 
