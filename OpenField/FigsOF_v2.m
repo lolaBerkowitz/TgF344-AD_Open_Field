@@ -53,32 +53,6 @@ axis off
 
 saveas(fig,[save_path,filesep,'WT_D1_paths','.svg'],'svg')
 
-%% Line plot of path distance over time bins 
-data_path = '/Users/lauraberkowitz/Google Drive/Manuscripts/In Progress/TgF344-AD_OF/Data/'; 
-df = readtable([data_path,'general_locomotion.csv']);
-tg_idx = contains(param_idx,'Tg') & contains(param_idx,'D1');
-tg_df = df(tg_idx,:);
-
-fig=figure('DefaultAxesFontSize',8,'defaultAxesFontName','Serif','defaultTextFontName','Serif');
-fig.Color = [1,1,1];
-[fig_width_in, fig_height_in] = set_size('thesis', .75, [1,1]);
-set(fig,'Position',[835 270 fig_width_in fig_height_in])
-% shadedErrorBar(1:6,nanmedian(tg_df{:,8:13},1),std(tg_df{:,8:13},1),{'-o','markerfacecolor','#601a4a'});
-hold on
-for i = 1:length(tg_df.subID)
-    p1 = plot(1:6,tg_df{i,8:13},'LineWidth',4,'Color','#601a4a');
-    p1.Color(4) = 0.5;
-end
-
-wt_idx = contains(param_idx,'WT') & contains(param_idx,'D1');
-wt_df = df(wt_idx,:);
-% shadedErrorBar(1:6,nanmedian(wt_df{:,8:13},1),std(wt_df{:,8:13},1),{'-o','markerfacecolor','#9c9eb5'});
-for i = 1:length(wt_df.subID)
-    p1 = plot(1:6,wt_df{i,8:13},'LineWidth',4,'Color','#9c9eb5');
-    p1.Color(4) = 0.5;
-end
-
-
 
 %% Example Segments for One Tg and one Wt animal (Figure 2)
 %Tg examples 3(min),5(max)
