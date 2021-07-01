@@ -24,7 +24,7 @@ maxmin=table; %initialize data table.
 
 for file=1:length(vidfile) %loop through folders containing subject videos
     %Pull up video
-    videoPathAndFileName = strcat(vidfile(file).folder,filesep,vidfile(file).name,filesep,vidfile(file).name,'.avi');
+    videoPathAndFileName = strcat(vidfile(file).folder,filesep,vidfile(file).name,filesep,vidfile(file).name,'.mpg');
     videoObj = VideoReader(videoPathAndFileName);
     
     %Save first frame as image (jpeg)
