@@ -6,56 +6,53 @@
 % TgF344_OF_figs_v2.py script
 
 % load('params_V8');
-load('D:\Users\BClarkLab\Google Drive (lberkowitz@unm.edu)\Manuscripts\In Progress\TgF344-AD_OF\Data\params_V19');
+load('/Users/lauraberkowitz/Google Drive/Manuscripts/In Progress/TgF344-AD_OF/Data/params.mat'); % maxmin.mat, cueCoords.mat
 param_idx=params.subID;
 
-%% Surface plots for occupancy (sum to get total time and divide by 60 to get into minutes
-tg1=sum(cat(3,params.rateMap{contains(param_idx,'Tg') & contains(param_idx,'D1')}),3)/60;
-wt1=sum(cat(3,params.rateMap{contains(param_idx,'WT') & contains(param_idx,'D1')}),3)/60;
-tg2=sum(cat(3,params.rateMap{contains(param_idx,'Tg') & contains(param_idx,'D2')}),3)/60;
-wt2=sum(cat(3,params.rateMap{contains(param_idx,'WT') & contains(param_idx,'D2')}),3)/60;
 
-%Use meshgrid to serve as basis for logical mask.
-imageSizeX = size(tg1,1);
-imageSizeY = size(tg1,2);
-[columnsInImage,rowsInImage] = meshgrid(1:imageSizeX, 1:imageSizeY);
-
-clear imageSizeX imageSizeY
-
-% Next create the circle in the image.
-centerX = median(1:size(tg1,1)); centerY = median(1:size(tg1,2)); radius = median(1:size(tg1,2));
-circlePixels = (rowsInImage - centerY).^2 ...
-    + (columnsInImage - centerX).^2 <= radius.^2;
-
-clear rowsInImage columnsInImage
-
-tg1(~circlePixels)=NaN; %indicate area outside the maze by labelling with NaN
-wt1(~circlePixels)=NaN; %indicate area outside the maze by labelling with NaN
-tg2(~circlePixels)=NaN; %indicate area outside the maze by labelling with NaN
-wt2(~circlePixels)=NaN; %indicate area outside the maze by labelling with NaN
-
-imAlpha1=ones(size(tg1));
-imAlpha1(isnan(tg1))=0;
-imAlpha2=ones(size(wt1));
-imAlpha2(isnan(wt1))=0;
-imAlpha3=ones(size(tg2));
-imAlpha3(isnan(tg2))=0;
-imAlpha4=ones(size(wt2));
-imAlpha4(isnan(wt2))=0;
-
-fig=figure; fig.Color=[1 1 1];
-subaxis(1,2,2) 
-ax = imagesc(tg1,'AlphaData',imAlpha1); colormap(inferno(255));axis xy;hold on; box off; axis image;shading flat;
-caxis([min(min(min(tg1,wt1))),max(max(max(tg1,wt1)))])
-title('Tg')
-colorbar('southoutside'); 
+%% General Locomotion - Example paths for both groups on day 1
+save_path = '/Users/lauraberkowitz/github/TgF344-AD_Open_Field/notebooks/figs/MatlabFigs/';
+% set figure defaults
+fig=figure('DefaultAxesFontSize',8,'defaultAxesFontName','Serif','defaultTextFontName','Serif');
+fig.Color = [1,1,1];
+[fig_width_in, fig_height_in] = set_size('thesis', .75, [1,1]);
+set(fig,'Position',[835 270 fig_width_in fig_height_in])
+plot(sin(0:pi/360:2*pi)*(202/2),cos(0:pi/360:2*pi)*(202/2),'k')
+hold on; plot((cos(linspace(-pi,pi,1000))+0)*(101*.8),(sin(linspace(-pi,pi,1000))+0)*(101*.8),'--k')
+tg_idx = contains(param_idx,'Tg') & contains(param_idx,'D1');
+tg_df = params(tg_idx,:);
+for i = 1:length(tg_df.subID)
+    x = tg_df.backCM{i}(:,1);
+    y = tg_df.backCM{i}(:,2);
+    p1 = plot(x,y,'LineWidth',1,'Color','#601a4a');
+    p1.Color(4) = 0.5;
+end
+axis image
 axis off
 
-subaxis(1,2,1) 
-imagesc(wt1,'AlphaData',imAlpha2); colormap(inferno(255));axis xy;hold on; box off; axis image;shading flat;
-caxis([min(min(min(tg1,wt1))),max(max(max(tg1,wt1)))])
-title('Wt')
+saveas(fig,[save_path,filesep,'Tg_D1_paths','.svg'],'svg')
+
+
+% set figure defaults
+fig=figure('DefaultAxesFontSize',8,'defaultAxesFontName','Serif','defaultTextFontName','Serif');
+fig.Color = [1,1,1];
+[fig_width_in, fig_height_in] = set_size('thesis', .75, [1,1]);
+set(fig,'Position',[835 270 fig_width_in fig_height_in])
+plot(sin(0:pi/360:2*pi)*(202/2),cos(0:pi/360:2*pi)*(202/2),'k')
+hold on; plot((cos(linspace(-pi,pi,1000))+0)*(101*.8),(sin(linspace(-pi,pi,1000))+0)*(101*.8),'--k')
+tg_idx = contains(param_idx,'WT') & contains(param_idx,'D1');
+tg_df = params(tg_idx,:);
+for i = 1:length(tg_df.subID)
+    x = tg_df.backCM{i}(:,1);
+    y = tg_df.backCM{i}(:,2);
+    p1 = plot(x,y,'LineWidth',1,'Color','#9c9eb5');
+    p1.Color(4) = 0.5;
+end
+axis image
 axis off
+
+saveas(fig,[save_path,filesep,'WT_D1_paths','.svg'],'svg')
+
 
 %% Example Segments for One Tg and one Wt animal (Figure 2)
 %Tg examples 3(min),5(max)
@@ -341,5 +338,63 @@ end
 axis image 
 axis off
 
+%% Old plot versions 
 
+%% Surface plots for occupancy (sum to get total time and divide by 60 to get into minutes
+
+% create occupancy map for each animal
+for i = 1:length(params.subID)
+    x = params.backCM{i}(:,1);
+    y = params.backCM{i}(:,2);
+    [params.occMap{i},map] = OF.occ_map(x,y,202,3,30);
+end
+
+tg1=sum(cat(3,params.occMap{contains(param_idx,'Tg') & contains(param_idx,'D1')}),3)/12;
+wt1=sum(cat(3,params.occMap{contains(param_idx,'WT') & contains(param_idx,'D1')}),3)/12;
+tg2=sum(cat(3,params.occMap{contains(param_idx,'Tg') & contains(param_idx,'D2')}),3)/12;
+wt2=sum(cat(3,params.occMap{contains(param_idx,'WT') & contains(param_idx,'D2')}),3)/12;
+
+%Use meshgrid to serve as basis for logical mask.
+imageSizeX = size(tg1,1);
+imageSizeY = size(tg1,2);
+[columnsInImage,rowsInImage] = meshgrid(1:imageSizeX, 1:imageSizeY);
+
+clear imageSizeX imageSizeY
+
+% Next create the circle in the image.
+centerX = median(1:size(tg1,1)); centerY = median(1:size(tg1,2)); radius = median(1:size(tg1,2));
+circlePixels = (rowsInImage - centerY).^2 ...
+    + (columnsInImage - centerX).^2 <= radius.^2;
+
+clear rowsInImage columnsInImage
+
+tg1(~circlePixels)=NaN; %indicate area outside the maze by labelling with NaN
+wt1(~circlePixels)=NaN; %indicate area outside the maze by labelling with NaN
+tg2(~circlePixels)=NaN; %indicate area outside the maze by labelling with NaN
+wt2(~circlePixels)=NaN; %indicate area outside the maze by labelling with NaN
+
+imAlpha1=ones(size(tg1));
+imAlpha1(isnan(tg1))=0;
+imAlpha2=ones(size(wt1));
+imAlpha2(isnan(wt1))=0;
+imAlpha3=ones(size(tg2));
+imAlpha3(isnan(tg2))=0;
+imAlpha4=ones(size(wt2));
+imAlpha4(isnan(wt2))=0;
+
+fig=figure; fig.Color=[1 1 1];
+subplot(1,2,2) 
+ax = imagesc(tg1,'AlphaData',imAlpha1); colormap(magma(255));axis xy;hold on; box off; axis image;shading flat;
+caxis([min(min(min(tg1,wt1))),max(max(max(tg1,wt1)))])
+set(gca, 'CLim', [0, 20])
+title('Tg')
+colorbar('southoutside'); 
+axis off
+
+subplot(1,2,1) 
+imagesc(wt1,'AlphaData',imAlpha2); colormap(magma(255));axis xy;hold on; box off; axis image;shading flat;
+caxis([min(min(min(tg1,wt1))),max(max(max(tg1,wt1)))])
+set(gca, 'CLim', [0, 20])
+title('Wt')
+axis off
 
