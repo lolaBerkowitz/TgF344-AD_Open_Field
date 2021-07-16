@@ -1,4 +1,4 @@
-function [ a,b,c ] = min_encl_ellipsoid( X,Y )
+function [ a,b,c ] = min_encl_ellipsoid( X,Y)
 %Finds the minimum enclosing ellipsoid of points along a rat's trajectory
 %in the Morris Water Maze
 %   X=all x-ccordinates of the trajectory
@@ -24,7 +24,7 @@ function [ a,b,c ] = min_encl_ellipsoid( X,Y )
 % December 2005
 % UPDATE: Jan 2009
 
-
+max_iter = 1000;
 
 %%%%%%%%%%%%%%%%%%%%% Solving the Dual problem%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 % ---------------------------------
@@ -49,7 +49,8 @@ u = (1/N) * ones(N,1);          % 1st iteration
 
 % Khachiyan Algorithm
 % -----------------------------------
-while err > tolerance,
+n = 0;
+while err > tolerance
     X = Q * diag(u) * Q';       % X = \sum_i ( u_i * q_i * q_i')  is a (d+1)x(d+1) matrix
     M = diag(Q' * inv(X) * Q);  % M the diagonal vector of an NxN matrix
     [maximum, j] = max(M);
@@ -59,6 +60,10 @@ while err > tolerance,
     count = count + 1;
     err = norm(new_u - u);
     u = new_u;
+    n = n+1;
+    if max_iter <= n
+        break
+    end
 end
 
 
