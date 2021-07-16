@@ -3,7 +3,7 @@
 %  Most data are exported as csv files for further analysis in Python.
 %  However, some measures are directly analyzed below. 
 
-load('D:\Users\BClarkLab\Google Drive (lberkowitz@unm.edu)\Manuscripts\In Progress\TgF344-AD_OF\Data\params_V19');
+load('/Users/lauraberkowitz/github/TgF344-AD_Open_Field/notebooks/data/params.mat'); 
 param_idx=params.subID;
 
 %% Compile single numeric Measures for whole trial analysis (#1)
@@ -293,7 +293,7 @@ end
 prop_cue_day2_Tg = sum(sum(bin_dur_mat(contains(param_idx,{'Tg'}) & contains(param_idx,{'D2'}),:),2)~=0) ;
 prop_cue_day2_Wt = sum(sum(bin_dur_mat(contains(param_idx,{'WT'}) & contains(param_idx,{'D2'}),:),2)~=0) ;
 
-[h,p, chi2stat,df] = prop_test([prop_cue_day2_Tg prop_cue_day2_Wt],[12 12],'true')
+[h,p, chi2stat,df] = prop_test([prop_cue_day2_Tg prop_cue_day2_Wt],[12 12],'true');
 
 % Proximity of primary hb day 1 versus primary hb day 2 (RESULTS LAST
 % PARAGRAPH)
