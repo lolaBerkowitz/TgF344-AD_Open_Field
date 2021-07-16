@@ -6,11 +6,60 @@
 % TgF344_OF_figs_v2.py script
 
 % load('params_V8');
-load('/Users/lauraberkowitz/Google Drive/Manuscripts/In Progress/TgF344-AD_OF/Data/params.mat'); % maxmin.mat, cueCoords.mat
+load('/Users/lauraberkowitz/github/TgF344-AD_Open_Field/notebooks/data/params.mat'); % maxmin.mat, cueCoords.mat
 param_idx=params.subID;
 
 
 %% General Locomotion - Example paths for both groups on day 1
+% Day 2 all paths per group. Save to NPY for plotting in python. 
+
+params_tg = params(contains(params.subID,'Tg') & contains(params.subID,'D2'),:);
+
+paths_tg = [];
+for i = 1:length(params_tg.subID)
+    
+    paths_tg = [paths_tg;params_tg.backCM{i}]; 
+    
+end
+
+writeNPY(paths_tg, '/Users/lauraberkowitz/github/TgF344-AD_Open_Field/notebooks/data/all_paths_tg_day2.npy')
+
+params_wt = params(contains(params.subID,'WT') & contains(params.subID,'D2'),:);
+
+paths_wt = [];
+for i = 1:length(params_wt.subID)
+    
+    paths_wt = [paths_wt;params_wt.backCM{i}]; 
+    
+end
+
+writeNPY(paths_wt, '/Users/lauraberkowitz/github/TgF344-AD_Open_Field/notebooks/data/all_paths_wt_day2.npy')
+
+% Day 1 all paths per group. Save to NPY for plotting in python. 
+
+params_tg = params(contains(params.subID,'Tg') & contains(params.subID,'D1'),:);
+
+paths_tg = [];
+for i = 1:length(params_tg.subID)
+    
+    paths_tg = [paths_tg;params_tg.backCM{i}]; 
+    
+end
+
+writeNPY(paths_tg, '/Users/lauraberkowitz/github/TgF344-AD_Open_Field/notebooks/data/all_paths_tg.npy')
+
+params_wt = params(contains(params.subID,'WT') & contains(params.subID,'D1'),:);
+
+paths_wt = [];
+for i = 1:length(params_wt.subID)
+    
+    paths_wt = [paths_wt;params_wt.backCM{i}]; 
+    
+end
+
+writeNPY(paths_wt, '/Users/lauraberkowitz/github/TgF344-AD_Open_Field/notebooks/data/all_paths_wt.npy')
+
+%%
 save_path = '/Users/lauraberkowitz/github/TgF344-AD_Open_Field/notebooks/figs/MatlabFigs/';
 % set figure defaults
 fig=figure('DefaultAxesFontSize',8,'defaultAxesFontName','Serif','defaultTextFontName','Serif');
@@ -19,18 +68,12 @@ fig.Color = [1,1,1];
 set(fig,'Position',[835 270 fig_width_in fig_height_in])
 plot(sin(0:pi/360:2*pi)*(202/2),cos(0:pi/360:2*pi)*(202/2),'k')
 hold on; plot((cos(linspace(-pi,pi,1000))+0)*(101*.8),(sin(linspace(-pi,pi,1000))+0)*(101*.8),'--k')
-tg_idx = contains(param_idx,'Tg') & contains(param_idx,'D1');
-tg_df = params(tg_idx,:);
-for i = 1:length(tg_df.subID)
-    x = tg_df.backCM{i}(:,1);
-    y = tg_df.backCM{i}(:,2);
-    p1 = plot(x,y,'LineWidth',1,'Color','#601a4a');
-    p1.Color(4) = 0.5;
-end
+p1 = plot(paths_tg(:,1),paths_tg(:,2),'LineWidth',1,'Color','#601a4a');
+p1.Color(4) = 0.5;
 axis image
 axis off
 
-saveas(fig,[save_path,filesep,'Tg_D1_paths','.svg'],'svg')
+saveas(fig,[save_path,filesep,'Tg_D1_paths','.pdf'],'pdf')
 
 
 % set figure defaults
@@ -40,21 +83,57 @@ fig.Color = [1,1,1];
 set(fig,'Position',[835 270 fig_width_in fig_height_in])
 plot(sin(0:pi/360:2*pi)*(202/2),cos(0:pi/360:2*pi)*(202/2),'k')
 hold on; plot((cos(linspace(-pi,pi,1000))+0)*(101*.8),(sin(linspace(-pi,pi,1000))+0)*(101*.8),'--k')
-tg_idx = contains(param_idx,'WT') & contains(param_idx,'D1');
-tg_df = params(tg_idx,:);
-for i = 1:length(tg_df.subID)
-    x = tg_df.backCM{i}(:,1);
-    y = tg_df.backCM{i}(:,2);
-    p1 = plot(x,y,'LineWidth',1,'Color','#9c9eb5');
-    p1.Color(4) = 0.5;
-end
+p1 = plot(paths_wt(:,1),paths_wt(:,2),'LineWidth',1,'Color','#9c9eb5');
+p1.Color(4) = 0.5;
 axis image
 axis off
 
-saveas(fig,[save_path,filesep,'WT_D1_paths','.svg'],'svg')
+saveas(fig,[save_path,filesep,'WT_D1_paths','.pdf'],'pdf')
 
 
 %% Example Segments for One Tg and one Wt animal (Figure 2)
+save_path = '/Users/lauraberkowitz/github/TgF344-AD_Open_Field/notebooks/figs/MatlabFigs/path_circuity/';
+
+%create colormap the size of the unique values in data -
+% now each line can be colorcoded on the same scale by the circuity value
+temp_circ = [];
+for all = 1:length(param_idx)
+    temp_circ = [temp_circ params.run_circ{all}];
+end
+
+unique_circ = unique([temp_circ],'sorted');
+cm_magma = magma(size(unique_circ,2));
+
+for rat = 1:length(param_idx)
+    fig=figure;
+    fig.Color = [1 1 1];
+    [fig_width_in, fig_height_in] = set_size('thesis', .75, [1,1]);
+    set(fig,'Position',[835 270 fig_width_in fig_height_in])
+    plot(sin(0:pi/360:2*pi)*(202/2),cos(0:pi/360:2*pi)*(202/2),'k'); hold on;
+    
+    title(extractBefore(param_idx(rat,1),'_'))
+    axis off
+    %     for i = 1:size(params.runs{rat},2)
+    path_circ = params.run_circ{rat};
+    [~,path_idx] = min(path_circ);
+    temp_run = params.runs{rat}{1,path_idx};
+    path_circ = params.run_circ{rat}(path_idx);
+    idx = ismember(unique_circ',path_circ');
+    plot(temp_run(:,1),temp_run(:,2),'Color',cm_magma(idx,:),'LineWidth',3); hold on;
+    %     end
+    axis image
+    ax = axes;
+    c = colorbar(ax);
+    ax.Visible = 'off';
+    colormap(cm_magma)
+    
+    saveas(fig,[save_path,filesep,param_idx{rat,1},'_circ_paths_min','.svg'],'svg')
+    
+    close all
+    
+end
+
+%%
 %Tg examples 3(min),5(max)
 % Wt examples 45(min),29(max)
 
@@ -64,7 +143,7 @@ for i = 1:size(Tg1_runs,2)
     temp_run(isnan(temp_run(:,1)),:)=[];
     Tg1_circ(i,1)=circuity(temp_run(:,1),temp_run(:,2));
 end
-Tg2_runs = params.runs{5};
+Tg2_runs = params.runs{9};
 for i = 1:size(Tg2_runs,2)
     temp_run = Tg2_runs{1,i};
     temp_run(isnan(temp_run(:,1)),:)=[];
@@ -87,9 +166,6 @@ end
 % Find unique values to pull corresponding color to colormap - sort to
 % maintain value relationships
 unique_circ = unique([Tg1_circ;Wt1_circ;Tg2_circ;Wt2_circ],'sorted');
-%create colormap the size of the unique values in data -
-% now each line can be colorcoded on the same scale by the circuity value
-cm_magma = magma(size(unique_circ,1)); 
 
 fig=figure;
 fig.Color = [1 1 1];
@@ -106,7 +182,7 @@ end
 
 subaxis(2,2,4)
 plot(sin(0:pi/360:2*pi)*(202/2),cos(0:pi/360:2*pi)*(202/2),'k'); hold on;
-title(extractBefore(param_idx(5,1),'_'))
+title(extractBefore(param_idx(9,1),'_'))
 axis off
 for i = 1:size(Tg2_runs,2)
     temp_run = Tg2_runs{1,i};
@@ -126,7 +202,7 @@ for i = 1:size(Wt1_runs,2)
     plot(temp_run(:,1),temp_run(:,2),'Color',cm_magma(ismember(unique_circ,Wt1_circ(i,1)),:),'LineWidth',3); hold on;
 end
 
-subaxis(2,2,3) 
+subaxis(2,2,3)
 plot(sin(0:pi/360:2*pi)*(202/2),cos(0:pi/360:2*pi)*(202/2),'k'); hold on;
 title(extractBefore(param_idx(29,1),'_'))
 axis off
@@ -142,11 +218,12 @@ c = colorbar(ax);
 ax.Visible = 'off';
 colormap(cm_magma)
 
+%%
 param_idx=params.subID;
-fig=figure; 
+fig=figure;
 fig.Color = [1 1 1];
 for i=1:2:48
-    [f,x] = ecdf(cell2mat(params.seg_circuity{i})');
+    [f,x] = ecdf(params.stop_cue_proximity{i,1}');
     if contains(param_idx(i),'Tg')
         plot(x,f,'LineWidth',3,'Color','#601a4a');
     else
@@ -162,7 +239,7 @@ xlabel('Circuity')
 
 
 %% Stops by stop duration (size) and time in trial (color)
-for i=1:size(params.tsStop,1) 
+for i=1:size(params.tsStop,1)
     for ii=1:size(params.tsStop{i},2)
         params.tsStopIdx{i}(1,ii)=params.tsStop{i}{1,ii}(1,1);
     end
@@ -177,7 +254,7 @@ wt1=vertcat(params.stopCenter{contains(param_idx,'WT') & contains(param_idx,'D1'
 wt1_c=horzcat(params.timeStopped{contains(param_idx,'WT') & contains(param_idx,'D1')});
 wt1_ts=horzcat(params.tsStopIdx{contains(param_idx,'WT') & contains(param_idx,'D1')});
 
-fig=figure; 
+fig=figure;
 fig.Color=[1 1 1];
 subaxis(1,2,2)
 plot(sin(0:2*pi/1000:2*pi)*102,cos(0:2*pi/1000:2*pi)*102,'k'); hold on;
@@ -196,12 +273,11 @@ colorbar
 colormap(magma(255))
 caxis([min([cell2mat(tg1_c),cell2mat(wt1_c)]),max([cell2mat(tg1_c),cell2mat(wt1_c)])])
 
-% CDF Stop Duration 
-fig = figure; 
-fig.Color = [1 1 1]
 param_idx=params.subID;
+fig=figure;
+fig.Color = [1 1 1];
 for i=1:2:48
-    [f,x] = ecdf(cell2mat(params.timeStopped{i})');
+    [f,x] = ecdf(params.timeStopped{i,1}');
     if contains(param_idx(i),'Tg')
         plot(x,f,'LineWidth',3,'Color','#601a4a');
     else
@@ -214,11 +290,8 @@ set(gca,'FontSize',14,'FontWeight','bold')
 
 ylabel('Proportion')
 xlabel('Stop Duration (s)')
-xlim([0 300])
-ylim([.3 1])
 
-
-%% Home Base Figures 
+%% Home Base Figures
 
 for i=1:size(params.HBcenter,1)
     for ii = 1:size(params.hbOcc{i},2)
@@ -226,7 +299,7 @@ for i=1:size(params.HBcenter,1)
     end
 end
 
-%num of HB that meet above 
+%num of HB that meet above
 for i = 1 : length (params.hbOcc)
     numHB(i,1)= sum(move_slow{i});
 end
@@ -247,7 +320,7 @@ wt_color = sscanf(str(2:end),'%2x%2x%2x',[1 3])/255;
 str = '#601a4a';
 tg_color = sscanf(str(2:end),'%2x%2x%2x',[1 3])/255;
 
-fig = figure; 
+fig = figure;
 fig.Color = [1 1 1];
 subaxis(1,2,1)
 plot(sin(0:2*pi/1000:2*pi)*101,cos(0:2*pi/1000:2*pi)*101,'k'); hold on;
@@ -260,7 +333,7 @@ for i = 1:size(wt_hb_idx,1)
         fill(temp(:,1),temp(:,2),wt_color,'FaceAlpha',.5,'EdgeAlpha',.5,'EdgeColor',wt_color)
     end
 end
-axis image 
+axis image
 axis off
 
 subaxis(1,2,2)
@@ -268,19 +341,19 @@ plot(sin(0:2*pi/1000:2*pi)*101,cos(0:2*pi/1000:2*pi)*101,'k'); hold on;
 title('Tg')
 test_Tg = params(tg_d1,:);
 for i = 1:size(wt_hb_idx,1)
-%     temp = test_Tg.HBBound{i}{1,tg_hb_idx(i,1)};
-     for ii = 1:size(test_Tg.HBBound{i},2)
+    %     temp = test_Tg.HBBound{i}{1,tg_hb_idx(i,1)};
+    for ii = 1:size(test_Tg.HBBound{i},2)
         temp = test_Tg.HBBound{i}{1,ii};
         fill(temp(:,1),temp(:,2),tg_color,'FaceAlpha',.5,'EdgeAlpha',.5,'EdgeColor',tg_color)
     end
 end
-axis image 
+axis image
 axis off
 
-%% Figure 5 probe test 
+%% Figure 5 probe test
 
 % At least one visit to cue location (proportion of animals)
-fig = figure; 
+fig = figure;
 fig.Color = [1 1 1];
 x = categorical({'Wt','Tg'});
 x = reordercats(x,{'Wt','Tg'});
@@ -293,12 +366,12 @@ ylabel('Proportion')
 xlabel('Group')
 set(gca,'FontSize',14,'FontWeight','bold')
 
-% Example Trajectories to Cue location 
+% Example Trajectories to Cue location
 
 wt_d2 = contains(param_idx,{'WT'}) & contains(param_idx,{'D2'});
 tg_d2 = contains(param_idx,{'Tg'}) & contains(param_idx,{'D2'});
 
-fig = figure; 
+fig = figure;
 fig.Color = [1 1 1];
 subaxis(1,2,1)
 plot(sin(0:2*pi/1000:2*pi)*101,cos(0:2*pi/1000:2*pi)*101,'k'); hold on;
@@ -316,7 +389,7 @@ for i = 1:size(test_Wt,1)
     plot(x,y,'LineWidth',2)
     plot(x(1,1),y(1,1),'*r'); hold on
 end
-axis image 
+axis image
 axis off
 
 subaxis(1,2,2)
@@ -335,10 +408,10 @@ for i = 1:size(test_Tg,1)
     plot(x,y,'LineWidth',2)
     plot(x(1,1),y(1,1),'*r'); hold on
 end
-axis image 
+axis image
 axis off
 
-%% Old plot versions 
+%% Old plot versions
 
 %% Surface plots for occupancy (sum to get total time and divide by 60 to get into minutes
 
@@ -383,15 +456,15 @@ imAlpha4=ones(size(wt2));
 imAlpha4(isnan(wt2))=0;
 
 fig=figure; fig.Color=[1 1 1];
-subplot(1,2,2) 
+subplot(1,2,2)
 ax = imagesc(tg1,'AlphaData',imAlpha1); colormap(magma(255));axis xy;hold on; box off; axis image;shading flat;
 caxis([min(min(min(tg1,wt1))),max(max(max(tg1,wt1)))])
 set(gca, 'CLim', [0, 20])
 title('Tg')
-colorbar('southoutside'); 
+colorbar('southoutside');
 axis off
 
-subplot(1,2,1) 
+subplot(1,2,1)
 imagesc(wt1,'AlphaData',imAlpha2); colormap(magma(255));axis xy;hold on; box off; axis image;shading flat;
 caxis([min(min(min(tg1,wt1))),max(max(max(tg1,wt1)))])
 set(gca, 'CLim', [0, 20])
