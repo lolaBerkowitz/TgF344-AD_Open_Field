@@ -5,7 +5,7 @@
 % were saved as .csv files using the Process_SLK.ipynb
 
 % Save path (where final csv is saved)
-save_path = '/Users/lauraberkowitz/github/TgF344-AD_Open_Field/notebooks/data';
+save_path = '/Users/lauraberkowitz/github/TgF344-AD_Open_Field/notebooks/data/';
 
 % video acquisition parameters
 fr = 9; % frame rate in Hz
@@ -45,10 +45,69 @@ df = locomotion_metrics(df,fr,diameter,binsize);
 df = stop_metrics(df,fr);
 
 %% Homebase (number of home bases)
-df = home_base_analysis(df,fr,binsize,diameter,upFactor);
+df = home_base_analysis(df,fr,binsize,diameter,15);
+
+% plot distributions for duration by area
+% fig = figure; 
+% fig.Color = [1 1 1];
+% subplot(1,2,1)
+% histogram([df.hb_duration_all{:}],100); hold on;
+% xline(50,'r','LineWidth',2)
+% xlabel('Home base duration (sec)')
+% ylabel('probability')
+% 
+% subplot(1,2,2)
+% scatter([df.hb_area{:}],[df.hb_duration_all{:}]); hold on;
+% xlabel('Home base area (sq cm)')
+% ylabel('Home base duration (sec)')
+% 
+% for hb = 1:length(df.hb_duration_all)
+%     
+%     [temp_duration,idx] = max(df.hb_duration_all{hb});
+%     temp_area = df.hb_area{hb}(idx);
+%     
+%     scatter(temp_area,temp_duration,'filled','r')
+%    
+% end
+% legend({'home base','primary home base'})
+% 
+% export_fig('/Users/lauraberkowitz/github/TgF344-AD_Open_Field/notebooks/figs/small_hb_testing.png','-m4') 
+
+%% Home base distance by timepoint 
+load('df_small_OF.mat');
+primary_hb_dist_mat = hb_dist_by_day(df);
+
+vars = {'rat','time_point','group','mean_hb_distance_over_days'};
+
+for i = 1:length(primary_hb_dist_mat)
+    if primary_hb_dist_mat(i,1) < 200 
+        group{i,1} = 'tg';
+    else
+        group{i,1} = 'wt';
+    end
+end
+
+primary_hb_dist_table = table(primary_hb_dist_mat(:,1),primary_hb_dist_mat(:,2),...
+    group,primary_hb_dist_mat(:,3),'VariableNames',vars);
+
+writetable(primary_hb_dist_table,[save_path,filesep,'primary_hb_dist_table.csv'])
+
 
 %% Save outcome measures to csv for analysis in R
 unpack_df(df,save_path)
+
+%% save cm paths
+for i = 1:length(df.file_loc)
+    temp_table = table;
+    temp_table.ts = df.ts{i};
+    temp_table.x = df.x_cm{i};
+    temp_table.y = df.y_cm{i};
+    temp_vel = df.velocity{i};
+    temp_vel(temp_vel < 0) = 0;
+    temp_table.velocity = temp_vel;
+    temp_id = [df.genotype{i},'_',num2str(df.rat(i)),'_',num2str(df.time_point{i}),'_',num2str(df.day(i))];
+    writetable(temp_table,['/Users/lauraberkowitz/github/TgF344-AD_Open_Field/notebooks/data/small_of_paths/',temp_id,'.csv'])
+end
 
 %% local functions
 
@@ -60,8 +119,8 @@ day = []; group = []; subID = []; time_point = [];
 gen_loco_thigmotaxis = []; gen_loco_velocity = []; gen_loco_path_length = []; gen_loco_search_area = [];
 % stop measures
 stops_num_stops = []; stops_median_duration = []; stops_median_inter_stop_interval = []; 
-% home 
-hb_duration = []; hb_stop_dist = []; hb_close_stop = []; hb_time2HB_keep = []; hb_HB_count_keep = [];
+% home base
+hb_duration = []; hb_stop_dist = []; hb_close_stop = []; hb_time2HB_keep = []; hb_HB_count_keep = []; hb_dist_to_wall = []; 
 
 % homebase measures
 for i = 1:length(df.file_loc)
@@ -95,6 +154,7 @@ for i = 1:length(df.file_loc)
     hb_close_stop = [hb_close_stop; df.hb_close_stop(i)];
     hb_time2HB_keep = [hb_time2HB_keep; df.hb_time2HB_keep(i)];
     hb_HB_count_keep = [hb_HB_count_keep; df.hb_HB_count_keep(i)];
+    hb_dist_to_wall = [hb_dist_to_wall; df.hb_min_dist_from_wall(i)];
 
 
 end
@@ -102,12 +162,12 @@ end
 vars = {'subID','group','day','time_point',...
     'thigmotaxis','median_velocity','path_length','search_area'...
     'n_stops','median_stop_duration','median_inter_stop_interval'...
-    'time_in_homebase','hb_stop_distance','hb_close_stops','time2hb','n_home_bases'};
+    'time_in_homebase','hb_stop_distance','hb_close_stops','time2hb','n_home_bases','hb_dist_to_wall'};
 
 save_df = table(subID,group,day,time_point,...
     gen_loco_thigmotaxis,gen_loco_velocity,gen_loco_path_length,gen_loco_search_area,...
     stops_num_stops,stops_median_duration,stops_median_inter_stop_interval,...
-    hb_duration,hb_stop_dist,hb_close_stop,hb_time2HB_keep,hb_HB_count_keep,'VariableNames',vars);
+    hb_duration,hb_stop_dist,hb_close_stop,hb_time2HB_keep,hb_HB_count_keep,hb_dist_to_wall,'VariableNames',vars);
 
 % Writetable
 writetable(save_df,[save_path,filesep,'small_open_field_measures.csv'])
@@ -191,6 +251,7 @@ df.gen_loco_thigmotaxis(1) = 1;
 df.gen_loco_velocity(1) = 1;
 df.gen_loco_path_length(1) = 1;
 df.gen_loco_search_area(1) = 1;
+df.velocity{1} = [];
 
 % loop through coordinates saved to data table
 for i = 1:length(df.file_loc)
@@ -216,6 +277,8 @@ for i = 1:length(df.file_loc)
     
     % save median velocity while moving
     df.gen_loco_velocity(i,1) = nanmedian(velocity(move));
+    
+    df.velocity{i,1} = [velocity(1,1);velocity];
     
 end
 
@@ -406,6 +469,54 @@ disp(['After duration test: ' num2str(size(events,1)) ' events.']);
 
 end
 
+% Home base distance across days
+function primary_hb_dist_mean = hb_dist_by_day(df)
+% computes the distance between two homebases based on their centroid.
+%
+% returns vector of differences same size as length of params. 
+
+% loop through rats 
+ratID = unique(df.rat);
+
+% initialize output 
+primary_hb_dist_mean = nan(length(ratID),3);
+
+for rat_idx = 1:length(ratID)
+    % loop through time point 
+    time_idx = 1;
+    temp = [df.time_point{:}]; 
+    for time_point = unique(temp(df.rat == ratID(rat_idx)))
+        % gather coordinates of hb
+        hb_day1 = df.HB_center_keep{(df.rat == ratID(rat_idx)) & (df.day == 1) & ([df.time_point{:}]' == time_point)};
+        hb_day2 = df.HB_center_keep{(df.rat == ratID(rat_idx)) & (df.day == 2) & ([df.time_point{:}]' == time_point)};
+        hb_day3 = df.HB_center_keep{(df.rat == ratID(rat_idx)) & (df.day == 3) & ([df.time_point{:}]' == time_point)};
+        
+        % check for nan (there was no hb)
+        if isnan(hb_day1) | isnan(hb_day2) | isnan(hb_day3)
+            primary_hb_dist_mean(rat_idx,time_idx)  = nan;
+            continue
+        
+        end
+        
+        % compute distance vector between coordinates 
+        primary_hb_dist_1v2 = sqrt((hb_day1(1,1) - hb_day2(1,1))^2 + (hb_day1(1,2) - hb_day2(1,2))^2);
+        primary_hb_dist_1v3 = sqrt((hb_day1(1,1) - hb_day3(1,1))^2 + (hb_day1(1,2) - hb_day3(1,2))^2);
+        primary_hb_dist_2v3 = sqrt((hb_day2(1,1) - hb_day3(1,1))^2 + (hb_day2(1,2) - hb_day3(1,2))^2);
+        
+        primary_hb_dist_mean(rat_idx,time_idx) = nanmean([primary_hb_dist_1v2,primary_hb_dist_1v3,primary_hb_dist_2v3]);
+        
+        time_idx = time_idx+1;
+        
+        clear primary_hb_dist_1v2 primary_hb_dist_1v3 primary_hb_dist_2v3
+    end
+    
+end
+% reorganize to long format 
+primary_hb_dist_mean = [ratID repmat(4,length(ratID),1) primary_hb_dist_mean(:,1); ...
+    ratID repmat(7,length(ratID),1) primary_hb_dist_mean(:,2); ...
+    ratID repmat(12,length(ratID),1) primary_hb_dist_mean(:,3);];
+end
+
 function df = home_base_analysis(df,fr,binsize,diameter,upFactor)
 % identifies homebase using kmeans of high occupancy coordinates and
 % obtains metrics relating to stopping behaviors.
@@ -429,8 +540,25 @@ df.hb_time2HB_keep(1) = nan;
 % number of home bases
 df.hb_HB_count_keep(1) = nan;
 
+% testing home base area 
+df.hb_area{1} = [];
+
+% Total duration all 
+df.hb_duration_all{1} = [];
+
+% Keep the home base center for between day tests
+df.HB_center_keep{1} = [];
+
+% hb min distance from wall
+df.hb_min_dist_from_wall(1) = nan;
+
 for i = 1:length(df.file_loc)
     disp(num2str(i))
+    
+    if isempty(df.x_cm{i})
+        continue
+    end
+    
     x = df.x_cm{i};
     y = df.y_cm{i};
     ts = df.ts{i};
@@ -459,6 +587,9 @@ for i = 1:length(df.file_loc)
             % Total duraiton
             df.hb_duration(i) = nan;
             
+            % Total duraiton all hb 
+            df.hb_duration_all{i} = [];
+            
             % Distance between homebase and stops
             df.hb_stop_dist(i) = nan;
             
@@ -473,6 +604,12 @@ for i = 1:length(df.file_loc)
             
             % number of home bases
             df.hb_HB_count_keep(i) = nan;
+            
+            % hb center
+            df.HB_center_keep{i} = nan;
+            
+            % hb min distance from wall
+            df.hb_min_dist_from_wall(i) = nan;
             
             continue
     end
@@ -493,7 +630,7 @@ for i = 1:length(df.file_loc)
     [~,map] = OF.occ_map(x,y,diameter,binsize,fr);
     
     % High occupancy coordinates
-    [~,~,home_base_x,home_base_y,~,upHBmap] = segmentImage('map',map,'upscalefac',upFactor); %Store area
+    [~,~,home_base_x,home_base_y,df.hb_area{i},upHBmap] = segmentImage('map',map,'upscalefac',upFactor,'figs',false); %Store area
     
     %% Preprocess high occupancy boundaries
     
@@ -513,7 +650,7 @@ for i = 1:length(df.file_loc)
         slow_in_homebase{hb} = sum(velocity(out_home(1:end-1)) < 3)/(nansum(out_home));
         
         HB_duration{hb} = sum(out_home)/fr;
-        
+            
         if slow_in_homebase{hb} < .70
 
             HB_stop_dist{hb} = NaN;
@@ -521,6 +658,8 @@ for i = 1:length(df.file_loc)
             home_base_stops{hb} = NaN;
             time2HB{hb} = NaN;
             HB_duration{hb} = NaN;
+            HB_center_keep{hb} = nan;
+            hb_wall_proximity{hb} = nan;
             
         else
             % boundary of home base
@@ -532,13 +671,17 @@ for i = 1:length(df.file_loc)
                HBcenter= [tempC(1,1),tempC(2,1)];
 
             catch
-                HBcenter= [0,0];
+                % if it fails, just take first hb coordinate 
+                HBcenter= [HBBound(1,1),HBBound(1,2)];
             end
 
             [HB_stop_dist{hb},HB_close_stop{hb}] = stops_to_homebase(HBcenter,stop_center);
             
             [home_base_stops{hb},time2HB{hb}] = home_base_metics(x_home,y_home,x_stop,y_stop,stop_center,ts_stop);
             
+            HB_center_keep{hb} = HBcenter;
+            
+            hb_wall_proximity{hb} = hb_proximity_to_wall(x_home,y_home,diameter);
         end
         
     end
@@ -551,7 +694,14 @@ for i = 1:length(df.file_loc)
     
     % Total duraiton
     df.hb_duration(i) = HB_duration{duration_idx};
+    df.hb_duration_all{i} = [HB_duration{:}];
     
+    % keep center of primary home base
+    df.HB_center_keep{i} = HB_center_keep{duration_idx};
+    
+    % hb min distance from wall
+    df.hb_min_dist_from_wall(i) = hb_wall_proximity{duration_idx};
+
     % Distance between homebase and stops
     df.hb_stop_dist(i) = HB_stop_dist{duration_idx};
     
@@ -589,6 +739,22 @@ HB_close_stop = sum(disttemp<25); %number of stops within 25cm from hb center
 
 end
 
+function hb_wall_proximity = hb_proximity_to_wall(x_home,y_home,diameter)
+
+% boundary of maze (assumes circular maze)
+boundary_coords = [[sin(0:pi/360:2*pi)*(diameter/2)]',[cos(0:pi/360:2*pi)*(diameter/2)]'];
+
+% distance from cue boundary
+for r = 1:length(x_home)
+    distances = sqrt(sum(bsxfun(@minus, boundary_coords, [x_home(r),y_home(r)]).^2,2));
+    move_cue_distance(r) = unique(distances(distances==min(distances))); %Find minimum distance from cue boundary to hb center
+end
+
+% find minimum distance
+hb_wall_proximity = nanmean(move_cue_distance);
+
+end
+
 function [home_base_stops,time2HB] = home_base_metics(x_home,y_home,x_stop,y_stop,stop_center,ts_stop)
 
 % This finds stops that occur in the home base boundary
@@ -603,5 +769,8 @@ if isempty(time2HB)
 else
     time2HB = time2HB(1);
 end
+
+% shortest distance of home base to wall
+
 
 end
