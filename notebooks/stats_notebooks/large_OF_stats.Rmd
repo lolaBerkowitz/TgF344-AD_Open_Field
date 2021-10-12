@@ -1,0 +1,183 @@
+---
+title: "large_OF_stats"
+author: "LBerkowitz"
+date: "7/26/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+df_large = read.csv('/Users/lauraberkowitz/github/TgF344-AD_Open_Field/notebooks/data/general_locomotion.csv')
+
+df_large$group <- factor(df_large$group)
+df_large$day[df_large$day %in% "D1"] <- 1
+df_large$day[df_large$day %in% "D2"] <- 2
+df_large$day<- factor(df_large$day)
+
+# remove day identifier in subject id to make into long format
+df_large$subID <- gsub("_D*", "", df_large$subID) 
+df_large$subID<- gsub(".{1}$", "", df_large$subID) 
+df_large$subID <- gsub("Tg", "", df_large$subID) 
+df_large$subID <- gsub("WT", "", df_large$subID) 
+df_large$subID <- factor(df_large$subID)
+
+summary(df_large)
+```
+
+## Examine 2x3x3 mixed model for locomotion measures 
+```{r}
+library(olsrr)
+df_large$path_length_trans <- log2(df_large$path_length)
+
+mdl <- lm(path_length_trans ~ (group + day)^2, data = df_large)
+lm_diag_plots(mdl)
+ols_step_all_possible(mdl)
+
+```
+
+## removed interaction as its not a great predictor of path length
+```{r}
+mdl_full <- lm(path_length_trans ~ group+day+day*group, data = df_large,contrasts = c(group=contr.helmert,day=contr.helmert))
+mdl_red <- lm(path_length_trans ~ group+day, data = df_large,contrasts = c(group=contr.helmert,day=contr.helmert))
+anova(mdl_full,mdl_red)
+lm_diag_plots(mdl_red)
+
+summary(mdl_red)
+
+```
+
+## Median velocity full model evaluation
+```{r}
+library(olsrr)
+df_large$median_velocity_trans <- (df_large$median_velocity)^-3.5
+
+mdl <- lm(median_velocity_trans ~ (group + day)^2, data = df_large)
+lm_diag_plots(mdl)
+ols_step_all_possible(mdl)
+
+```
+
+```{r}
+mdl_full <- lm(median_velocity_trans ~ group+day+day*group, data = df_large,contrasts = c(group=contr.helmert,day=contr.helmert))
+mdl_red <- lm(median_velocity_trans ~ group+day, data = df_large,contrasts = c(group=contr.helmert,day=contr.helmert))
+anova(mdl_full,mdl_red)
+lm_diag_plots(mdl_red)
+
+summary(mdl_red)
+
+```
+
+```{r}
+library(olsrr)
+df_large$search_area_trans <- log2(df_large$search_area)
+
+mdl <- lm(search_area_trans ~ (group + day)^2, data = df_large)
+lm_diag_plots(mdl)
+ols_step_all_possible(mdl)
+
+```
+
+```{r}
+mdl_full <- lm(search_area_trans ~ group+day+day*group, data = df_large,contrasts = c(group=contr.helmert,day=contr.helmert))
+mdl_red <- lm(search_area_trans ~ group+day, data = df_large,contrasts = c(group=contr.helmert,day=contr.helmert))
+anova(mdl_full,mdl_red)
+lm_diag_plots(mdl_red)
+
+summary(mdl_red)
+
+
+```
+
+```{r}
+library(olsrr)
+df_large$thigmotaxis_trans <- (df_large$thigmotaxis)^2
+
+mdl <- lm(thigmotaxis_trans ~ (group + day)^2, data = df_large)
+lm_diag_plots(mdl)
+ols_step_all_possible(mdl)
+
+```
+
+## Cue interaction
+```{r}
+df_cue = read.csv('/Users/lauraberkowitz/github/TgF344-AD_Open_Field/notebooks/data/time_2_cue.csv')
+
+df_cue$group <- factor(df_cue$group)
+df_cue$day[df_cue$day %in% "D1"] <- 1
+df_cue$day[df_cue$day %in% "D2"] <- 2
+df_cue$day<- factor(df_cue$day)
+
+# remove rats with missing data 
+df_cue <- df_cue[complete.cases(df_cue), ]
+
+summary(df_cue)
+
+
+```
+
+```{r}
+library(olsrr)
+df_cue$time2cue_trans <- log2(df_cue$time_2_cue)
+
+mdl <- lm(time2cue_trans ~ (group + day)^2, data = df_cue)
+lm_diag_plots(mdl)
+ols_step_all_possible(mdl)
+
+```
+
+```{r}
+mdl_full <- lm(time2cue_trans ~ group+day+day*group, data = df_cue,contrasts = c(group=contr.helmert,day=contr.helmert))
+mdl_red <- lm(time2cue_trans ~ group+day, data = df_cue,contrasts = c(group=contr.helmert,day=contr.helmert))
+anova(mdl_full,mdl_red)
+lm_diag_plots(mdl_red)
+
+summary(mdl_red)
+
+
+```
+
+```{r}
+library(tidyverse)
+# mean distance of HB from boundary by group and day 
+df_cue %>%                                        # Specify data frame
+  group_by(group,day) %>%                         # Specify group indicator
+  summarise_at(vars(time_2_cue),              # Specify column
+               list(median = median))               # Specify function
+
+```
+
+## Examine cue interaction for stops with Glmer 
+```{r}
+df_cue_stop = read.csv('/Users/lauraberkowitz/github/TgF344-AD_Open_Field/notebooks/data/stop_metrics_mixed_models.csv')
+
+df_cue_stop$group <- factor(df_cue_stop$group)
+df_cue_stop$day[df_cue_stop$day %in% "D1"] <- 1
+df_cue_stop$day[df_cue_stop$day %in% "D2"] <- 2
+df_cue_stop$day<- factor(df_cue_stop$day)
+df_cue_stop$stop_id <- factor(df_cue_stop$stop_id)
+
+# remove rats with missing data
+
+summary(df_cue_stop)
+```
+
+# Examine number of stops that are within 25 cm of cue location
+```{r}
+library(lme4)
+library(lmerTest)
+library(predictmeans)
+
+df_cue_stop$stop_cue_proximity_trans <- log2(df_cue_stop$stop_cue_proximity)
+
+m1 = lmer(stop_cue_proximity_trans ~ group + day + (1|subID), data=df_cue_stop)
+m1.null = lmer(stop_cue_proximity_trans ~ 1 + day + (1|subID), data=df_cue_stop)
+anova(m1.null, m1)
+
+#summary(m1.null)
+#residplot(m1.null)
+
+
+```
