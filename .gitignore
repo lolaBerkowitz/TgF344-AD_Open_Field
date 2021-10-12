@@ -138,3 +138,12 @@ dmypy.json
 cython_debug/
 
 .DS_store
+
+*.mat
+*.csv
+*.svg
+*.png
+*.pdf
+*.npy
+*.svg
+*.svg
