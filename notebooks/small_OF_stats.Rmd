@@ -1,0 +1,328 @@
+---
+title: "small_OF_stats"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load small open field measures data
+
+```{r}
+
+# df = read.csv("D:/Users/BClarkLab/github/Berkowitz_et_al_2021/GrossLocomotion/gross_locomotion.csv")
+df = read.csv('/Users/lauraberkowitz/github/TgF344-AD_Open_Field/notebooks/data/small_open_field_measures.csv')
+df$subID<- factor(df$subID)
+df$group <- factor(df$group)
+df$time_point <- factor(df$time_point)
+df$day<- factor(df$day)
+
+# remove rats with missing data 
+df <- df[complete.cases(df), ]
+
+summary(df)
+
+
+```
+
+## Examine 2x3x3 mixed model for locomotion measures 
+```{r}
+library(olsrr)
+df$path_length_trans <- sqrt(df$path_length)
+
+mdl <- lm(path_length_trans ~ (group + day + time_point)^2, data = df)
+lm_diag_plots(mdl)
+ols_step_all_possible(mdl)
+
+```
+## remove day as its not a great predictor of path length
+```{r}
+mdl <- lm(path_length_trans ~ (group + time_point)^2, data = df,contrasts = c(group=contr.helmert,time_point=contr.helmert))
+lm_diag_plots(mdl)
+
+summary(mdl)
+
+```
+
+## Examine Thigmotaxis
+```{r}
+library(olsrr)
+df$thigmotaxis_trans <- (df$thigmotaxis)^3.5
+
+mdl <- lm(thigmotaxis_trans ~ (group + day + time_point)^2, data = df)
+lm_diag_plots(mdl)
+ols_step_all_possible(mdl)
+```
+
+## remove day as its not a great predictor of Thigmotaxis
+```{r}
+mdl <- lm(thigmotaxis_trans ~ (group + time_point)^2, data = df,contrasts = c(group=contr.helmert,time_point=contr.helmert))
+lm_diag_plots(mdl)
+
+summary(mdl)
+coef(mdl)
+
+cell.means <- aggregate(x=list(Y=df$thigmotaxis),
+                        by=list(B=df$time_point),
+                        FUN=mean)
+
+print(cell.means/600)
+```
+
+## Examine median velocity
+```{r}
+library(olsrr)
+df$velocity_trans <- log10(df$median_velocity)
+
+mdl <- lm(velocity_trans ~ (group + day + time_point)^2, data = df)
+lm_diag_plots(mdl)
+ols_step_all_possible(mdl)
+```
+
+## remove day as its not a great predictor of median velocity
+```{r}
+mdl <- lm(velocity_trans ~ (group + time_point)^2, data = df,contrasts = c(group=contr.helmert,time_point=contr.helmert))
+lm_diag_plots(mdl)
+
+summary(mdl)
+
+```
+
+```{r}
+library(olsrr)
+df$searcharea_trans <- (df$search_area)
+
+mdl <- lm(searcharea_trans ~ (group + day + time_point)^2, data = df)
+lm_diag_plots(mdl)
+ols_step_all_possible(mdl)
+```
+
+## remove day as its not a great predictor of median velocity
+```{r}
+mdl <- lm(searcharea_trans ~ (group + time_point)^2, data = df,contrasts = c(group=contr.helmert,time_point=contr.helmert))
+lm_diag_plots(mdl)
+
+summary(mdl)
+
+```
+
+## Lets look at stopping behavior
+```{r}
+library(olsrr)
+df$n_stops_trans <- sqrt(df$n_stops)
+
+mdl <- lm(n_stops_trans ~ (group + day + time_point)^2, data = df)
+lm_diag_plots(mdl)
+ols_step_all_possible(mdl)
+```
+
+```{r}
+mdl_full <- lm(n_stops_trans ~ group*day, data = df,contrasts = c(group=contr.helmert,day=contr.helmert))
+lm_diag_plots(mdl_full)
+
+mdl_red <- lm(n_stops_trans ~ group + day, data = df,contrasts = c(group=contr.helmert,day=contr.helmert))
+lm_diag_plots(mdl_red)
+
+anova(mdl_full,mdl_red)
+
+summary(mdl_red)
+
+
+```
+
+## Stop duration
+```{r}
+library(olsrr)
+df$median_stop_duration_trans <- log(df$median_stop_duration)
+
+mdl <- lm(median_stop_duration_trans ~ (group + day + time_point)^2, data = df)
+lm_diag_plots(mdl)
+ols_step_all_possible(mdl)
+```
+
+```{r}
+mdl_full <- lm(median_stop_duration_trans ~ group*time_point, data = df,contrasts = c(group=contr.helmert,time_point=contr.helmert))
+lm_diag_plots(mdl_full)
+
+mdl_red <- lm(median_stop_duration_trans ~ group + time_point, data = df,contrasts = c(group=contr.helmert,time_point=contr.helmert))
+lm_diag_plots(mdl_red)
+
+anova(mdl_full,mdl_red)
+
+
+summary(mdl_red)
+
+```
+
+## Stop intervals
+```{r}
+library(olsrr)
+df$median_inter_stop_trans <- log(df$median_inter_stop_interval)
+
+mdl <- lm(median_inter_stop_trans ~ (group + day + time_point)^2, data = df)
+lm_diag_plots(mdl)
+ols_step_all_possible(mdl)
+```
+
+```{r}
+mdl_full <- lm(median_inter_stop_trans ~ group*time_point, data = df,contrasts = c(group=contr.helmert,time_point=contr.helmert))
+lm_diag_plots(mdl_full)
+
+mdl_red <- lm(median_inter_stop_trans ~ group + time_point, data = df,contrasts = c(group=contr.helmert,time_point=contr.helmert))
+lm_diag_plots(mdl_red)
+
+anova(mdl_full,mdl_red)
+
+
+summary(mdl_red)
+
+```
+
+## Home Base evaluation
+```{r}
+library(olsrr)
+df$hb_dist_to_wall_trans <- (df$hb_dist_to_wall)
+
+mdl <- lm(hb_dist_to_wall_trans ~ (group + day + time_point)^2, data = df)
+lm_diag_plots(mdl)
+ols_step_all_possible(mdl)
+```
+
+```{r}
+mdl_full <- lm(hb_dist_to_wall_trans ~ group*time_point, data = df,contrasts = c(group=contr.sum,time_point=contr.helmert))
+lm_diag_plots(mdl_full)
+
+mdl_red <- lm(hb_dist_to_wall_trans ~ group + time_point, data = df,contrasts = c(group=contr.sum,time_point=contr.helmert))
+lm_diag_plots(mdl_red)
+
+anova(mdl_full,mdl_red)
+
+summary(mdl_red)
+
+```
+
+```{r}
+# mean distance of HB from boundary by group and day 
+library(dplyr)
+df %>%                                        # Specify data frame
+  group_by(group) %>%                         # Specify group indicator
+  summarise_at(vars(hb_dist_to_wall),              # Specify column
+               list(name = std)               # Specify function
+
+
+
+
+```
+
+```{r}
+library(olsrr)
+df$time2hb_trans <- (df$time2hb)
+
+mdl <- lm(time2hb_trans ~ (group + day + time_point)^2, data = df)
+lm_diag_plots(mdl)
+ols_step_all_possible(mdl)
+```
+```{r}
+mdl_full <- lm(time2hb_trans ~ group*time_point, data = df,contrasts = c(group=contr.sum,time_point=contr.helmert))
+lm_diag_plots(mdl_full)
+
+mdl_red <- lm(time2hb_trans ~ group + time_point, data = df,contrasts = c(group=contr.sum,time_point=contr.helmert))
+lm_diag_plots(mdl_red)
+
+anova(mdl_full,mdl_red)
+
+summary(mdl_red)
+```
+
+```{r}
+# mean distance of HB from boundary by group and day 
+df %>%                                        # Specify data frame
+  group_by(time_point) %>%                         # Specify group indicator
+  summarise_at(vars(time2hb),              # Specify column
+               list(name = mean))               # Specify function
+
+
+
+
+```
+
+```{r}
+library(olsrr)
+df$time_in_hb_trans <- log2(df$time_in_homebase)
+
+mdl <- lm(time_in_hb_trans ~ (group + day + time_point)^2, data = df)
+lm_diag_plots(mdl)
+ols_step_all_possible(mdl)
+```
+
+```{r}
+mdl_full <- lm(time_in_hb_trans ~ group*day, data = df,contrasts = c(group=contr.sum,day=contr.helmert))
+lm_diag_plots(mdl_full)
+
+mdl_red <- lm(time_in_hb_trans ~ group + day, data = df,contrasts = c(group=contr.sum,day=contr.helmert))
+lm_diag_plots(mdl_red)
+
+anova(mdl_full,mdl_red)
+
+summary(mdl_red)
+```
+
+```{r}
+# mean distance of HB from boundary by group and day 
+df %>%                                        # Specify data frame
+  group_by(group) %>%                         # Specify group indicator
+  summarise_at(vars(time_in_homebase),              # Specify column
+               list(name = mean))               # Specify function
+
+
+
+
+```
+
+
+```{r}
+
+# df = read.csv("D:/Users/BClarkLab/github/Berkowitz_et_al_2021/GrossLocomotion/gross_locomotion.csv")
+df_hb_dist = read.csv('/Users/lauraberkowitz/github/TgF344-AD_Open_Field/notebooks/data/primary_hb_dist_table.csv')
+df_hb_dist$subID<- factor(df_hb_dist$rat)
+df_hb_dist$group <- factor(df_hb_dist$group)
+df_hb_dist$time_point <- factor(df_hb_dist$time_point)
+
+# remove rats with missing data 
+df_hb_dist <- df_hb_dist[complete.cases(df_hb_dist), ]
+
+summary(df_hb_dist)
+
+
+```
+
+```{r}
+library(olsrr)
+df_hb_dist$mean_hb_distance_over_days_trans <- (df_hb_dist$mean_hb_distance_over_days)^1.5
+
+mdl <- lm(mean_hb_distance_over_days_trans ~ (group + time_point)^2, data = df_hb_dist)
+lm_diag_plots(mdl)
+ols_step_all_possible(mdl)
+```
+
+```{r}
+mdl_full <- lm(mean_hb_distance_over_days_trans ~ group*time_point, data = df_hb_dist,contrasts = c(group=contr.sum,time_point=contr.helmert))
+lm_diag_plots(mdl_full)
+
+mdl_red <- lm(mean_hb_distance_over_days_trans ~ group + time_point, data = df_hb_dist,contrasts = c(group=contr.sum,time_point=contr.helmert))
+lm_diag_plots(mdl_red)
+
+anova(mdl_full,mdl_red)
+
+summary(mdl_full)
+```
+
+```{r}
+# mean distance of HB from boundary by group and day 
+df_hb_dist %>%                                        # Specify data frame
+  group_by(group,time_point) %>%                         # Specify group indicator
+  summarise_at(vars(mean_hb_distance_over_days),              # Specify column
+               list(name = median))               # Specify function
+
+```
