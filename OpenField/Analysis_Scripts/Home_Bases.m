@@ -16,6 +16,8 @@ binsize = 3;
 diameter = params.dia{1};
 upFactor = 15; %used in segmentimage - this upscales the heatmap to get a smooth boundary
 
+% add to df variables
+params.HB_center_keep{1} = [];
 
 % Loop through subjects
 for i = 1:length(params.subID)
@@ -87,6 +89,7 @@ for i = 1:length(params.subID)
             home_base_stops{hb} = NaN;
             time2HB{hb} = NaN;
             HB_duration{hb} = NaN;
+            HBcenter_keep{hb} = NaN;
             
         else
             % boundary of home base
@@ -109,8 +112,10 @@ for i = 1:length(params.subID)
             
             [home_base_stops{hb},time2HB{hb}] = home_base_metics(x_home,y_home,x_stop,y_stop,stop_center,ts_stop);
             
+            HBcenter_keep{hb} = HBcenter;
+            
         end
-        
+        clear HBcenter
     end
     
     % Unpack HB coord and keep max given moving slow
@@ -120,6 +125,10 @@ for i = 1:length(params.subID)
    
     % Total duraiton
     HB_duration_keep(i) = HB_duration{duration_idx};
+    
+    % Primary home base center coordinates 
+    params.HB_center_keep{i} = HBcenter_keep{duration_idx};
+   
     
     % Distance between other home bases
     HB_avg_dist_keep(i) = HB_avg_dist{duration_idx};
@@ -141,7 +150,7 @@ for i = 1:length(params.subID)
     
     % number of home bases 
     HB_count_keep(i) = sum(slow_in_hb_idx);
-
+    
     clear slow_in_homebase time2HB home_base_stops ...
         HB_close_stop HB_stop_dist HBdist2Cue HB_min_dist HB_max_dist...
         HB_avg_dist HB_duration stop_center home_base_x home_base_y
@@ -157,8 +166,10 @@ for i = 1:length(params.subID)
     day{i,1} = extractAfter(params.subID{i},'_');
     
 end
-
-% Save to google drive
+%% compute home base distance 
+primary_hb_dist = hb_dist_by_day(params);
+ 
+%% Save to google drive
 vars = {'subID','group','day',...
     'duration',...
     'avg_dist_between_HB',...
@@ -167,12 +178,13 @@ vars = {'subID','group','day',...
     'num_close_stops',...
     'num_stops',...
     'time_to_HB',...
-    'num_of_HB'...
+    'num_of_HB',...
+    'primary_HB_dist'
     };
 
 df = table(subID,group,day,HB_duration_keep',HB_avg_dist_keep',...
     HBdist2Cue_keep',HB_stop_dist_keep',...
-    HB_close_stop_keep',home_base_stops_keep',time2HB_keep',HB_count_keep','VariableNames',vars);
+    HB_close_stop_keep',home_base_stops_keep',time2HB_keep',HB_count_keep',primary_hb_dist,'VariableNames',vars);
 
 
 % Writetable
@@ -286,7 +298,49 @@ disp(['After duration test: ' num2str(size(events,1)) ' events.']);
 
 end
 
-% Home base distance from cue
+% Home base minimum distance from maze wall
+function hb_wall_proximity = hb_proximity_to_wall(x_home,y_home,diameter)
+
+% boundary of maze (assumes circular maze)
+boundary_coords = [[sin(0:pi/360:2*pi)*(diameter/2)]',[cos(0:pi/360:2*pi)*(diameter/2)]'];
+
+% distance from cue boundary
+for r = 1:length(x_home)
+    distances = sqrt(sum(bsxfun(@minus, boundary_coords, [x_home(r),y_home(r)]).^2,2));
+    move_cue_distance(r) = unique(distances(distances==min(distances))); %Find minimum distance from cue boundary to hb center
+end
+
+% find minimum distance
+move_cue_proximity = min(move_cue_distance);
+
+end
+
+% Home base distance across days
+function primary_hb_dist = hb_dist_by_day(params)
+% computes the distance between two homebases based on their centroid.
+%
+% returns vector of differences same size as length of params. 
+
+% loop through df and compute distance between home bases...assumes order
+% in df is rat day 1, rat day 2, rat2 day 1, rat2 day2, etc.
+for rat = 1:2:length(params.subID)
+    hb_day1 = params.HB_center_keep{rat};
+    hb_day2 = params.HB_center_keep{rat+1};
+    
+    % compute distance vector between coordinates 
+    if isnan(hb_day1) | isnan(hb_day2)
+        primary_hb_dist(rat,1) = nan;
+        primary_hb_dist(rat+1,1) = nan;
+    else
+        primary_hb_dist(rat,1) = sqrt((hb_day1(1,1) - hb_day2(1,1))^2 + (hb_day1(1,2) - hb_day2(1,2))^2);
+        primary_hb_dist(rat+1,1) = nan;
+    end
+ 
+
+end
+
+
+end
 function HBdist2Cue =  homebase_dist_from_cue(cueCM,HBcenter)
 % calculating proximity of high occupancy coordinates center from the
 % cue boundary
