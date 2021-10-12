@@ -116,6 +116,7 @@ end
 
 X(nanloc)=NaN;
 if figs
+    figure;
     imAlpha=ones(size(X));
     imAlpha(isnan(X))=0;
     imagesc(X,'AlphaData',imAlpha);
