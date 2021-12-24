@@ -148,3 +148,7 @@ cython_debug/
 *.svg
 *.svg
 *.csv
+
+# directories with massive figures
+figs/12mo_small_paths/
+
